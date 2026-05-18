@@ -1,0 +1,22 @@
+﻿
+<MudNavMenu>
+    <MudNavLink Href="/" Match="NavLinkMatch.All">Lessons</MudNavLink>
+
+    <!--
+
+    <MudNavLink Href="/home" Match="NavLinkMatch.All">Home</MudNavLink>
+    <MudNavLink Href="/counter" Match="NavLinkMatch.Prefix">Counter</MudNavLink>
+    <MudNavLink Href="/weather" Match="NavLinkMatch.Prefix">Weather</MudNavLink>
+    -->
+</MudNavMenu>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

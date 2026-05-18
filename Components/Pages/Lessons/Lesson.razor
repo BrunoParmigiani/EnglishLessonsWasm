@@ -1,0 +1,217 @@
+﻿@page "/lessons/{Id:guid}"
+@using EnglishLessonsWasm.FileCreator.Create
+@using EnglishLessonsWasm.FileCreator.Strategies
+@using EnglishLessonsWasm.Lessons.DTO
+@using EnglishLessonsWasm.Lessons.GetById
+@using EnglishLessonsWasm.Lessons.Models
+@using EnglishLessonsWasm.Lessons.Update
+@inject IDialogService DialogService
+@inject IMediator mediator
+@inject IJSRuntime jsRuntime
+
+@if (lesson is not null)
+{
+    <PageTitle>Lesson @lesson.Number</PageTitle>
+
+    <MudText Typo="Typo.h3">
+        Lesson @lesson.Number
+    </MudText>
+    <br />
+
+    <div class="d-flex justify-content-between" style="width: 30%;">
+        <MudSelect @bind-Value="Strategy" Label="File type" Style="margin-right: 20px;">
+            @foreach (var kvp in Strategies)
+            {
+                <MudSelectItem Value="kvp.Value">@kvp.Key</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudButton @onclick='async () => {await DownloadFile(Strategy);}' Color="Color.Primary" Variant="Variant.Filled">
+            Download
+        </MudButton>
+    </div>
+    <br />
+
+    <MudText Typo="Typo.h4">Verbs</MudText>
+    <br />
+    <div>
+        <MudButton @onclick='async () => {await OpenCreateItemDialog(lesson, "verb");}' Variant="Variant.Filled" Color="Color.Success">Add</MudButton>
+    </div>
+    <br />
+    @foreach (var verb in lesson.Verbs)
+    {
+        <div class="d-flex flex-grow-1">
+            <div class="flex-none" style="margin-right: 15px; width: 50%;">
+                <MudText><b>@verb.Name:</b> @verb.Meaning</MudText>
+                <MudText><b>E.g.:</b> @verb.Example</MudText>
+            </div>
+            <div class="flex-shrink-0">
+                <MudIconButton @onclick='async () => {await OpenDictionaries(verb.Name);}' Icon="@Icons.Material.Filled.Search" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" />
+                <MudIconButton @onclick='async () => {await OpenUpdateItemDialog(lesson, verb, "verb");}' Icon="@Icons.Material.Filled.ModeEdit" Variant="Variant.Filled" Color="Color.Warning" Size="Size.Large" />
+                <MudIconButton @onclick='async () => {await DeleteItem(verb, lesson.Verbs);}' Icon="@Icons.Material.Filled.Delete" Variant="Variant.Filled" Color="Color.Error" Size="Size.Large" />
+            </div>
+        </div>
+        <br />
+    }
+    <br />
+
+    <MudText Typo="Typo.h4">Words</MudText>
+    <br />
+    <div>
+        <MudButton @onclick='async () => {await OpenCreateItemDialog(lesson, "word");}' Variant="Variant.Filled" Color="Color.Success">Add</MudButton>
+    </div>
+    <br />
+    @foreach (var word in lesson.Words)
+    {
+        <div class="d-flex flex-grow-1">
+            <div class="flex-none" style="margin-right: 15px; width: 50%;">
+                <MudText><b>@word.Name:</b> @word.Meaning</MudText>
+                <MudText><b>E.g.:</b> @word.Example</MudText>
+            </div>
+            <div class="flex-shrink-0">
+                <MudIconButton @onclick='async () => {await OpenDictionaries(word.Name);}' Icon="@Icons.Material.Filled.Search" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" />
+                <MudIconButton @onclick='async () => {await OpenUpdateItemDialog(lesson, word, "word");}' Icon="@Icons.Material.Filled.ModeEdit" Variant="Variant.Filled" Color="Color.Warning" Size="Size.Large" />
+                <MudIconButton @onclick='async () => {await DeleteItem(word, lesson.Words);}' Icon="@Icons.Material.Filled.Delete" Variant="Variant.Filled" Color="Color.Error" Size="Size.Large" />
+            </div>
+        </div>
+        <br />
+    }
+    <br />
+
+    <MudText Typo="Typo.h4">Expressions</MudText>
+    <br />
+    <div>
+        <MudButton @onclick='async () => {await OpenCreateItemDialog(lesson, "expression");}' Variant="Variant.Filled" Color="Color.Success">Add</MudButton>
+    </div>
+    <br />
+    @foreach (var expression in lesson.Expressions)
+    {
+        <div class="d-flex flex-grow-1">
+            <div class="flex-none" style="margin-right: 15px; width: 50%;">
+                <MudText><b>@expression.Name:</b> @expression.Meaning</MudText>
+                <MudText><b>E.g.:</b> @expression.Example</MudText>
+            </div>
+            <div class="flex-shrink-0">
+                <MudIconButton @onclick='async () => {await OpenUpdateItemDialog(lesson, expression, "expression");}' Icon="@Icons.Material.Filled.ModeEdit" Variant="Variant.Filled" Color="Color.Warning" Size="Size.Large" />
+                <MudIconButton @onclick='async () => {await DeleteItem(expression, lesson.Expressions);}' Icon="@Icons.Material.Filled.Delete" Variant="Variant.Filled" Color="Color.Error" Size="Size.Large" />
+            </div>
+        </div>
+        <br />
+    }
+    <br />
+}
+else
+{
+    <MudText>Lesson could not be loaded.</MudText>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private LessonDTO lesson { get; set; }
+
+    private IFileCreatorStrategy Strategy { get; set; }
+
+    private Dictionary<string, IFileCreatorStrategy> Strategies { get; set; } = new Dictionary<string, IFileCreatorStrategy>
+    {
+        { "Text", new PlainTextStrategy() },
+        //{ "PDF", new PDFStrategy() }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SetLesson();
+    }
+
+    private async Task OpenCreateItemDialog(LessonDTO lesson, string type)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var parameters = new DialogParameters<CreateWordDialog>
+        {
+            { dialog => dialog.Lesson, lesson },
+            { dialog => dialog.ItemType, type }
+        };
+
+        var dialog = await DialogService.ShowAsync<CreateWordDialog>("Create Item", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await SetLesson();
+        }
+    }
+
+    private async Task OpenUpdateItemDialog(LessonDTO lesson, WordDTO item, string type)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var parameters = new DialogParameters<UpdateWordDialog>
+        {
+            { dialog => dialog.Lesson, lesson },
+            { dialog => dialog.ItemType, type },
+            { dialog => dialog.Item, item }
+        };
+
+        var dialog = await DialogService.ShowAsync<UpdateWordDialog>("Update Item", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await SetLesson();
+        }
+    }
+
+    private async Task DeleteItem(WordDTO item, List<WordDTO> collection)
+    {
+        collection.Remove(item);
+
+        var command = new UpdateLessonCommand
+            {
+                Id = lesson.Id,
+                Number = lesson.Number,
+                Verbs = lesson.Verbs,
+                Words = lesson.Words,
+                Expressions = lesson.Expressions
+            };
+
+        await mediator.Send(command);
+    }
+
+    private async Task OpenDictionaries(string word)
+    {
+        string longman = $"https://www.ldoceonline.com/dictionary/{word}";
+        string cambridge = $"https://dictionary.cambridge.org/dictionary/english-portuguese/{word}";
+
+        await jsRuntime.InvokeVoidAsync("open", longman, "_blank");
+        await jsRuntime.InvokeVoidAsync("open", cambridge, "_blank");
+    }
+
+    private async Task DownloadFile(IFileCreatorStrategy strategy)
+    {
+        if (strategy is null) return;
+                
+        var command = new CreateFileCommand
+            {
+                Lesson = lesson,
+                Strategy = strategy
+            };
+
+        var lessonFile = await mediator.Send(command);
+        var fileStream = new MemoryStream(lessonFile.FileData);
+        string fileName = $"Lesson{lesson.Number}{lessonFile.FileFormat}";
+
+        using var streamRef = new DotNetStreamReference(stream: fileStream);
+
+        await jsRuntime.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+    }
+
+    private async Task SetLesson()
+    {
+        var query = new GetLessonByIdQuery
+            {
+                Id = Id
+            };
+
+        lesson = await mediator.Send(query);
+    }
+}

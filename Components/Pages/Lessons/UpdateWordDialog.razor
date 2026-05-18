@@ -1,0 +1,70 @@
+﻿@using EnglishLessonsWasm.Lessons.DTO
+@using EnglishLessonsWasm.Lessons.Models
+@using EnglishLessonsWasm.Lessons.Update
+@inject IMediator mediator
+
+<MudDialog>
+    <TitleContent>
+        Update @ItemType
+    </TitleContent>
+
+    <DialogContent>
+        <MudForm Model="Item" @ref="Form" Validation="Validator.ValidateValue" ValidationDelay="0">
+            <MudTextField @bind-Value="Item.Name"
+                          For="() => Item.Name"
+                          Immediate="true"
+                          Label="Name" />
+
+            <MudTextField @bind-Value="Item.Meaning" Label="Meaning" />
+
+            <MudTextField @bind-Value="Item.Example" Label="Example" />
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton OnClick="Submit" ButtonType="ButtonType.Submit" Color="Color.Primary">Send</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    private MudForm Form;
+
+    [Parameter]
+    public LessonDTO Lesson { get; set; }
+
+    [Parameter]
+    public string ItemType { get; set; }
+
+    [Parameter]
+    public WordDTO Item { get; set; }
+
+    private WordDTOValidator Validator = new();
+
+    private UpdateLessonCommand UpdateLessonCommand { get; set; } = new();
+
+    public async Task Submit()
+    {
+        await Form.ValidateAsync();
+
+        if (Form.IsValid)
+        {
+            UpdateLessonCommand = new UpdateLessonCommand
+                {
+                    Id = Lesson.Id,
+                    Number = Lesson.Number,
+                    Verbs = Lesson.Verbs,
+                    Words = Lesson.Words,
+                    Expressions = Lesson.Expressions
+                };
+
+            await mediator.Send(UpdateLessonCommand);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+    }
+
+    public void Cancel() => MudDialog.Cancel();
+}

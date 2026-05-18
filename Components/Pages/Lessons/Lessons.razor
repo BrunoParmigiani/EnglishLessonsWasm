@@ -1,0 +1,110 @@
+﻿@page "/"
+@using EnglishLessonsWasm.Lessons.DTO
+@using EnglishLessonsWasm.Lessons.GetAll
+@using EnglishLessonsWasm.Lessons.Models
+@inject IDialogService DialogService
+@inject IMediator mediator
+@inject NavigationManager NavManager
+
+<PageTitle>Lessons</PageTitle>
+
+<MudText Typo="Typo.h3">
+    Lessons
+</MudText>
+<br />
+
+<div>
+    <MudButton OnClick="OpenCreateLessonDialogAsync" Variant="Variant.Filled" Color="Color.Primary">
+        Create Lesson
+    </MudButton>
+</div>
+<br />
+
+@if (lessons is null || !lessons.Any())
+{
+    <MudText>No lessons were found</MudText>
+}
+else
+{
+    @foreach (var lesson in lessons)
+    {
+        <MudElement HtmlTag="div" Class="d-flex align-items-center">
+            <MudText Style="margin-top: auto; margin-bottom: auto; margin-right: 10px;">Lesson @lesson.Number</MudText>
+            <MudButton Style="margin-right: 10px;" Variant="Variant.Filled" Color="Color.Primary" @onclick='() => {RedirectToLesson(lesson.Id);}'>Access</MudButton>
+            <MudButton Style="margin-right: 10px;" Variant="Variant.Filled" Color="Color.Warning" @onclick='async () => {await OpenUpdateLessonDialogAsync(lesson);}'>Update</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Error" @onclick='async () => {await OpenDeleteLessonDialogAsync(lesson);}'>Delete</MudButton>
+        </MudElement>
+        <br />
+    }
+}
+
+@code {
+    private List<LessonDTO>? lessons;
+
+    protected override async Task OnInitializedAsync()
+    {
+        lessons = await GetLessons();
+    }
+
+    private void RedirectToLesson(Guid id) => NavManager.NavigateTo($"/lessons/{id}");
+
+    private async Task OpenCreateLessonDialogAsync()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+
+        var dialog = await DialogService.ShowAsync<CreateLessonDialog>("Create Lesson", options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await RefreshLessons();
+        }
+    }
+
+    private async Task OpenDeleteLessonDialogAsync(LessonDTO lesson)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var parameters = new DialogParameters<DeleteLessonDialog>
+        {
+            { dialog => dialog.Lesson, lesson }
+        };
+
+        var dialog = await DialogService.ShowAsync<DeleteLessonDialog>("Delete Lesson", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await RefreshLessons();
+        }
+    }
+
+    private async Task OpenUpdateLessonDialogAsync(LessonDTO lesson)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var parameters = new DialogParameters<UpdateLessonDialog>
+        {
+            { dialog => dialog.Lesson, lesson }
+        };
+
+        var dialog = await DialogService.ShowAsync<UpdateLessonDialog>("Update Lesson", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await RefreshLessons();
+        }
+    }
+
+    private async Task<List<LessonDTO>> GetLessons()
+    {
+        var query = new GetLessonsQuery();
+        var result = await mediator.Send(query);
+
+        return result.OrderByDescending(lesson => lesson.Number).ToList();
+    }
+
+    private async Task RefreshLessons()
+    {
+        lessons = await GetLessons();
+    }
+}

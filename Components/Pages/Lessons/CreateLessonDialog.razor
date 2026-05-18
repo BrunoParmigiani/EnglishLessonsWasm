@@ -1,0 +1,51 @@
+﻿@using EnglishLessonsWasm.Lessons.Create
+@using EnglishLessonsWasm.Lessons.Models
+@inject IMediator mediator
+
+<MudDialog>
+    <TitleContent>
+        Create Lesson
+    </TitleContent>
+
+    <DialogContent>
+        <MudForm Model="CreateLessonCommand" @ref="Form" Validation="Validator.ValidateValue" ValidationDelay="0">
+            <MudNumericField @bind-Value="CreateLessonCommand.Number"
+                For="() => CreateLessonCommand.Number"
+                Immediate="true"
+                Label="Lesson Number" 
+                Min="1" />
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton OnClick="Submit" ButtonType="ButtonType.Submit" Color="Color.Primary">Send</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    private MudForm Form;
+
+    private CreateLessonCommandValidator Validator = new();
+
+    private CreateLessonCommand CreateLessonCommand { get; set; } = new CreateLessonCommand
+        {
+            Number = 1
+        };
+
+    private async Task Submit()
+    {
+        await Form.ValidateAsync();
+
+        if (Form.IsValid)
+        {
+            await mediator.Send(CreateLessonCommand);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

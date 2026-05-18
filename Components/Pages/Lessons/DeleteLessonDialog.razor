@@ -1,0 +1,41 @@
+﻿@using EnglishLessonsWasm.Lessons.DTO
+@using EnglishLessonsWasm.Lessons.Delete
+@inject IMediator mediator
+
+<MudDialog>
+    <TitleContent>
+        Delete Lesson @Lesson.Number
+    </TitleContent>
+
+    <DialogContent>
+        <MudText>You're about to delete the lesson of number @Lesson.Number. This action cannot be undone.</MudText>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton OnClick="Submit" Color="Color.Error">Delete</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public LessonDTO Lesson { get; set; } = null!;
+
+    private DeleteLessonCommand DeleteLessonCommand { get; set; } = new DeleteLessonCommand();
+
+    protected override void OnInitialized()
+    {
+        DeleteLessonCommand.Id = Lesson.Id;
+    }
+
+    private async Task Submit()
+    {
+        await mediator.Send(DeleteLessonCommand);
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
