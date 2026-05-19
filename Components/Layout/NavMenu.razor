@@ -1,6 +1,7 @@
-﻿
+﻿@inject NavigationManager NavManager
+
 <MudNavMenu>
-    <MudNavLink Href="/" Match="NavLinkMatch.All">Lessons</MudNavLink>
+    <MudNavLink Href="@NavManager.BaseUri" Match="NavLinkMatch.All">Lessons</MudNavLink>
 
     <!--
 

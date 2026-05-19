@@ -46,7 +46,7 @@ else
         lessons = await GetLessons();
     }
 
-    private void RedirectToLesson(Guid id) => NavManager.NavigateTo($"/lessons/{id}");
+    private void RedirectToLesson(Guid id) => NavManager.NavigateTo($"{NavManager.Uri}lessons/{id}");
 
     private async Task OpenCreateLessonDialogAsync()
     {
