@@ -1,0 +1,1 @@
+Experimental Blazor WASM application deploy on github pages
